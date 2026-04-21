@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MERUSAKA — Security System</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --g1:#C9A84C;--g2:#E8C96A;--g3:#F5DFA0;--g4:#A87C24;--gdim:#8B6914;
+  --galpha:rgba(201,168,76,.1);
+  --n0:#050C16;--n1:#080F1C;--n2:#0C1827;--n3:#111F30;--n4:#172639;--n5:#1D2F44;--n6:#243650;
+  --c1:#EAE4D6;--c2:#B8AA90;--c3:#6A5E48;
+  --red:#E85555;--grn:#4EC994;--blu:#4E8FE8;--ylw:#E8A84E;--pur:#9B59E8;
+  --tm:#DDD7CC;--ts:#6A7E9A;
+  --bdr:rgba(201,168,76,.12);--bdrs:rgba(201,168,76,.28);
+  --sh:0 24px 64px rgba(0,0,0,.72);--sh2:0 8px 32px rgba(0,0,0,.5);--sh-g:0 8px 32px rgba(201,168,76,.2);
+  --r:18px;--r2:14px;--r3:10px;--r4:6px;
+  --fd:'Playfair Display',serif;--fb:'DM Sans',sans-serif;
+  --t:.22s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--fb);background:var(--n0);color:var(--tm);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--n2)}
+::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:4px}
+img{display:block;max-width:100%}
+
+/* PAGES */
+.page{display:none;min-height:100vh;flex-direction:column}
+.page.active{display:flex}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideInRight{from{opacity:0;transform:translateX(32px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+@keyframes shimmer{0%{background-position:-400% 0}100%{background-position:400% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 14px rgba(201,168,76,.2),0 4px 20px rgba(201,168,76,.25)}50%{box-shadow:0 0 30px rgba(201,168,76,.5),0 4px 32px rgba(201,168,76,.4)}}
+@keyframes floatOrb{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(12px,-18px) scale(1.05)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+@keyframes highlightRow{0%{background:rgba(201,168,76,.14)}100%{background:transparent}}
+@keyframes fadeOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+@keyframes borderGlow{0%,100%{opacity:.35}50%{opacity:.85}}
+@keyframes scanLine{0%{transform:translateY(-5%)}100%{transform:translateY(105vh)}}
+@keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══ LOGIN PAGE ══════════════════════════════════ */
+#loginPage{justify-content:center;align-items:center;background:var(--n0);position:relative;overflow:hidden}
+.lp-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(201,168,76,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.04) 1px,transparent 1px);background-size:70px 70px;pointer-events:none}
+.lp-grid::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 80% at 50% 50%,transparent 20%,var(--n0) 100%)}
+.lp-orbs{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(90px)}
+.orb1{width:600px;height:600px;top:-150px;left:-180px;background:rgba(201,168,76,.07);animation:floatOrb 9s ease-in-out infinite}
+.orb2{width:450px;height:450px;bottom:-100px;right:-120px;background:rgba(78,143,232,.05);animation:floatOrb 12s ease-in-out infinite reverse}
+.orb3{width:350px;height:350px;top:40%;left:45%;background:rgba(78,201,148,.04);animation:floatOrb 15s ease-in-out infinite 3s}
+.lp-scan{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.lp-scan::after{content:'';position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.18),transparent);animation:scanLine 7s linear infinite}
+
+.lc-wrap{position:relative;z-index:1;width:100%;max-width:460px;padding:20px}
+.lc{
+  background:linear-gradient(150deg,rgba(17,31,48,.97) 0%,rgba(11,23,38,.97) 100%);
+  border:1px solid rgba(201,168,76,.18);border-radius:28px;padding:54px 48px;
+  box-shadow:var(--sh),0 0 120px rgba(201,168,76,.05),inset 0 1px 0 rgba(255,255,255,.05);
+  animation:fadeUp .8s cubic-bezier(.16,1,.3,1) both;position:relative;overflow:hidden
+}
+.lc::before{content:'';position:absolute;top:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.45),transparent)}
+
+.lc-logo{text-align:center;margin-bottom:40px}
+.lc-emblem{
+  width:74px;height:74px;
+  background:linear-gradient(135deg,var(--g4),var(--g1) 50%,var(--g2));
+  border-radius:20px;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;
+  font-family:var(--fd);font-size:2rem;font-weight:700;color:var(--n0);
+  box-shadow:0 0 40px rgba(201,168,76,.3),inset 0 2px 0 rgba(255,255,255,.25);
+  animation:glow 5s ease-in-out infinite
+}
+.lc-orn{display:inline-flex;align-items:center;gap:14px;margin-bottom:12px}
+.orn-ln{width:38px;height:1px;background:linear-gradient(to right,transparent,var(--g1))}
+.orn-ln.r{background:linear-gradient(to left,transparent,var(--g1))}
+.orn-dia{width:6px;height:6px;background:var(--g1);transform:rotate(45deg);box-shadow:0 0 8px rgba(201,168,76,.6)}
+.lc-logo h1{font-family:var(--fd);font-size:2.6rem;font-weight:700;color:var(--g1);letter-spacing:.18em;line-height:1}
+.lc-logo p{font-size:.6rem;letter-spacing:.3em;color:var(--ts);text-transform:uppercase;margin-top:8px}
+.lc-bar{width:40px;height:2px;background:linear-gradient(90deg,var(--g1),var(--g2));margin:0 auto 36px;border-radius:2px}
+
+/* FORM */
+.fg{margin-bottom:20px;position:relative}
+.fg label{display:flex;align-items:center;gap:6px;font-size:.67rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ts);margin-bottom:8px;font-weight:600}
+.req{color:var(--red);font-size:.9rem}
+.fi{
+  width:100%;background:rgba(255,255,255,.035);border:1px solid rgba(201,168,76,.12);
+  border-radius:var(--r3);padding:12px 16px;color:var(--tm);font-family:var(--fb);
+  font-size:.9rem;outline:none;transition:border-color var(--t),box-shadow var(--t),background var(--t);
+  appearance:none;-webkit-appearance:none
+}
+.fi:focus{border-color:var(--g1);box-shadow:0 0 0 3px rgba(201,168,76,.1);background:rgba(255,255,255,.055)}
+.fi.err{border-color:var(--red)!important;box-shadow:0 0 0 3px rgba(232,85,85,.1)!important}
+.fi::placeholder{color:var(--c3);font-size:.83rem}
+.fi option{background:var(--n3);color:var(--tm)}
+select.fi{cursor:pointer;padding-right:36px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236A7E9A' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+input[type="date"].fi{cursor:pointer}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.5) sepia(1) saturate(2) hue-rotate(5deg);cursor:pointer}
+
+/* Icon input */
+.ig{position:relative}
+.ig-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1}
+.ig-ico svg{width:15px;height:15px;stroke:var(--ts);stroke-width:2}
+.ig .fi{padding-left:42px}
+
+/* Error */
+.ferr{font-size:.68rem;color:var(--red);margin-top:6px;display:none;align-items:center;gap:5px;font-weight:600}
+.ferr.show{display:flex}
+.ferr::before{content:'⚠';font-size:.74rem}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:11px 20px;border-radius:var(--r3);font-family:var(--fb);
+  font-size:.77rem;font-weight:700;letter-spacing:.06em;cursor:pointer;
+  border:none;transition:all var(--t);text-transform:uppercase;white-space:nowrap;
+  position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent
+}
+.btn::after{content:'';position:absolute;inset:0;background:transparent;transition:background var(--t)}
+.btn:hover::after{background:rgba(255,255,255,.08)}
+.btn:active{transform:scale(.96)}
+.btn svg{width:14px;height:14px;flex-shrink:0;stroke-width:2.3}
+.btn-gold{background:linear-gradient(135deg,#A87C24 0%,var(--g1) 40%,var(--g2) 75%,var(--g3) 100%);color:var(--n0);box-shadow:0 4px 20px rgba(201,168,76,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.btn-gold:hover{box-shadow:0 8px 32px rgba(201,168,76,.55);transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.04);border:1px solid var(--bdr);color:var(--c2)}
+.btn-ghost:hover{border-color:var(--g1);color:var(--g1);background:rgba(201,168,76,.06)}
+.btn-red{background:linear-gradient(135deg,#C33,var(--red));color:#fff;box-shadow:0 4px 16px rgba(232,85,85,.25)}
+.btn-red:hover{box-shadow:0 6px 24px rgba(232,85,85,.45)}
+.btn-grn{background:linear-gradient(135deg,#35976B,var(--grn));color:var(--n0);box-shadow:0 4px 16px rgba(78,201,148,.2)}
+.btn-grn:hover{box-shadow:0 6px 24px rgba(78,201,148,.4);transform:translateY(-1px)}
+.btn-blu{background:linear-gradient(135deg,#3571CC,var(--blu));color:#fff;box-shadow:0 4px 16px rgba(78,143,232,.2)}
+.btn-ylw{background:linear-gradient(135deg,#BB7E1E,var(--ylw));color:var(--n0);box-shadow:0 4px 16px rgba(232,168,78,.2)}
+.btn-ylw:hover{box-shadow:0 6px 24px rgba(232,168,78,.4);transform:translateY(-1px)}
+.btn-full{width:100%}
+.btn-sm{padding:8px 15px;font-size:.72rem}
+.btn-xs{padding:5px 11px;font-size:.66rem;border-radius:6px}
+
+/* ══ TOPBAR ══════════════════════════════════════ */
+.topbar{
+  background:rgba(5,11,21,.96);border-bottom:1px solid transparent;
+  padding:0 28px;height:70px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  box-shadow:0 4px 32px rgba(0,0,0,.5);position:sticky;
+}
+.topbar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,76,.25),var(--g1),rgba(201,168,76,.25),transparent);
+  animation:borderGlow 4s ease-in-out infinite
+}
+.tb-brand{display:flex;align-items:center;gap:14px}
+.tb-icon{
+  width:44px;height:44px;
+  background:linear-gradient(135deg,var(--g4),var(--g1) 50%,var(--g2));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:1.25rem;font-weight:700;color:var(--n0);
+  box-shadow:0 4px 20px rgba(201,168,76,.4),inset 0 1px 0 rgba(255,255,255,.22);
+  animation:glow 5s ease-in-out infinite;flex-shrink:0
+}
+.tb-text h2{font-family:var(--fd);font-size:1.14rem;font-weight:700;color:var(--g1);letter-spacing:.1em;line-height:1.1}
+.tb-text p{font-size:.58rem;color:var(--ts);letter-spacing:.18em;text-transform:uppercase;margin-top:2px}
+.tb-right{display:flex;align-items:center;gap:9px}
+
+/* Clock widget */
+.tb-clock{
+  display:flex;flex-direction:column;align-items:flex-end;
+  padding:6px 12px;
+  background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.14);border-radius:9px
+}
+.tb-clock-time{font-size:.9rem;font-weight:700;color:var(--g1);letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.tb-clock-date{font-size:.58rem;color:var(--ts);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+
+/* Session timer */
+.timer{
+  display:flex;align-items:center;gap:7px;padding:7px 13px;
+  background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.16);
+  border-radius:9px;font-size:.78rem;color:var(--g1);font-weight:700;
+  letter-spacing:.06em;font-variant-numeric:tabular-nums
+}
+.timer svg{width:12px;height:12px;stroke:var(--g1);stroke-width:2.2;flex-shrink:0}
+
+/* User badge */
+.ub{
+  display:flex;align-items:center;gap:10px;padding:7px 13px;
+  background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:11px
+}
+.ub-av{
+  width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,var(--gdim),var(--g1));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;font-weight:700;color:var(--n0);font-family:var(--fb)
+}
+.ub-nm{font-size:.82rem;font-weight:600;color:var(--tm);line-height:1.2}
+.ub-rl{font-size:.57rem;color:var(--ts);text-transform:uppercase;letter-spacing:.1em}
+
+/* ══ MAIN ══════════════════════════════════════ */
+.main{flex:1;padding:28px;max-width:1500px;width:100%;margin:0 auto}
+
+/* Page header */
+.ph{margin-bottom:26px}
+.ph-row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.ph h1{font-family:var(--fd);font-size:2.1rem;color:var(--g1);line-height:1;font-weight:700}
+.ph p{font-size:.78rem;color:var(--ts);margin-top:5px;letter-spacing:.01em}
+
+.live-badge{
+  display:flex;align-items:center;gap:8px;padding:7px 14px;
+  background:rgba(78,201,148,.07);border:1px solid rgba(78,201,148,.18);
+  border-radius:9px;font-size:.7rem;color:var(--grn);font-weight:700;letter-spacing:.06em
+}
+.live-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--grn);animation:pulse 2s ease-in-out infinite}
+
+/* ══ CARD ══════════════════════════════════════ */
+.card{
+  background:linear-gradient(160deg,rgba(17,31,48,.9) 0%,rgba(11,23,38,.95) 100%);
+  border:1px solid var(--bdr);border-radius:var(--r);
+  box-shadow:var(--sh2),inset 0 1px 0 rgba(255,255,255,.03);
+  overflow:hidden;margin-bottom:20px;position:relative
+}
+.card::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,76,.2),transparent)
+}
+.ch{
+  padding:18px 24px;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  background:rgba(255,255,255,.01)
+}
+.ct{font-family:var(--fd);font-size:1.05rem;color:var(--g1);display:flex;align-items:center;gap:10px;font-weight:700}
+.ct svg{width:17px;height:17px;stroke:var(--g1);opacity:.8;stroke-width:1.8;flex-shrink:0}
+.cb{padding:22px 24px}
+
+/* ══ TABS (User) ══════════════════════════════ */
+.tabs{
+  display:flex;gap:6px;background:rgba(8,15,28,.9);
+  border:1px solid var(--bdr);border-radius:var(--r2);padding:5px;margin-bottom:22px;
+  backdrop-filter:blur(12px)
+}
+.tbb{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 20px;border:none;background:transparent;color:var(--ts);
+  font-family:var(--fb);font-size:.78rem;font-weight:700;cursor:pointer;
+  border-radius:10px;transition:all var(--t);letter-spacing:.05em;text-transform:uppercase
+}
+.tbb svg{width:14px;height:14px;flex-shrink:0;stroke-width:2.2}
+.tbb.active{background:linear-gradient(135deg,var(--g4),var(--g1),var(--g2));color:var(--n0);box-shadow:0 4px 18px rgba(201,168,76,.35)}
+.tbb:not(.active):hover{color:var(--g2);background:rgba(201,168,76,.06)}
+.tbc{display:none;animation:fadeIn .25s ease}
+.tbc.active{display:block}
+
+/* Form grid */
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.fc{grid-column:1/-1}
+
+/* Photo capture */
+.pc-wrap{
+  border:2px dashed rgba(201,168,76,.22);border-radius:var(--r2);overflow:hidden;
+  background:rgba(255,255,255,.02);cursor:pointer;transition:all var(--t);
+  position:relative;min-height:200px;display:flex;align-items:center;
+  justify-content:center;flex-direction:column
+}
+.pc-wrap:hover{border-color:var(--g1);background:rgba(201,168,76,.03)}
+.pc-wrap.has-img{border-style:solid;border-color:rgba(201,168,76,.35)}
+.pc-wrap.err{border-color:rgba(232,85,85,.5)!important;box-shadow:0 0 0 3px rgba(232,85,85,.08)!important}
+.pc-ph{text-align:center;pointer-events:none;padding:28px}
+.pc-ph .ico{
+  width:58px;height:58px;border-radius:15px;margin:0 auto 14px;
+  background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(201,168,76,.06));
+  border:1px solid rgba(201,168,76,.18);display:flex;align-items:center;justify-content:center
+}
+.pc-ph .ico svg{width:26px;height:26px;stroke:var(--g1);opacity:.8;stroke-width:1.6}
+.pc-ph p{font-size:.87rem;color:var(--c2);font-weight:600;margin-bottom:4px}
+.pc-ph span{font-size:.7rem;color:var(--ts)}
+.pc-img{width:100%;height:200px;object-fit:cover;display:none}
+.pc-file{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.pc-change{
+  position:absolute;bottom:10px;right:10px;background:rgba(5,11,21,.9);
+  border:1px solid var(--bdr);border-radius:7px;padding:5px 11px;
+  font-size:.66rem;color:var(--g1);display:none;backdrop-filter:blur(10px);
+  font-weight:600;pointer-events:none;letter-spacing:.04em
+}
+.pc-wrap.has-img .pc-change{display:block}
+
+/* Radio */
+.rg{display:flex;gap:10px;flex-wrap:wrap}
+.ro{
+  display:flex;align-items:center;gap:10px;padding:12px 18px;
+  border:1px solid rgba(201,168,76,.12);border-radius:var(--r3);
+  cursor:pointer;transition:all var(--t);flex:1;min-width:130px
+}
+.ro:hover{border-color:rgba(201,168,76,.38);background:rgba(201,168,76,.04)}
+.ro.active{border-color:var(--g1);background:rgba(201,168,76,.09)}
+.ro.err{border-color:rgba(232,85,85,.4);background:rgba(232,85,85,.03)}
+.ro input{display:none}
+.rd{width:16px;height:16px;border-radius:50%;border:2px solid var(--ts);transition:all var(--t);flex-shrink:0}
+.ro.active .rd{border-color:var(--g1);background:var(--g1);box-shadow:0 0 8px rgba(201,168,76,.4)}
+.rl{font-size:.85rem;font-weight:600}
+
+/* ══ STATS CARDS ══════════════════════════════ */
+.sg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
+.sc{
+  background:linear-gradient(145deg,rgba(23,38,57,.95) 0%,rgba(17,31,48,.95) 100%);
+  border:1px solid var(--bdr);border-radius:var(--r);padding:22px;
+  cursor:pointer;transition:all var(--t);position:relative;overflow:hidden
+}
+.sc::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--g1),var(--g2),transparent);
+  opacity:.55;transition:opacity var(--t)
+}
+.sc::after{
+  content:'';position:absolute;bottom:-50px;right:-25px;
+  width:130px;height:130px;border-radius:50%;
+  background:radial-gradient(circle,rgba(201,168,76,.07) 0%,transparent 70%);
+  transition:all .4s
+}
+.sc:hover{border-color:rgba(201,168,76,.3);transform:translateY(-5px);box-shadow:0 20px 48px rgba(201,168,76,.1),0 8px 24px rgba(0,0,0,.4)}
+.sc:hover::before{opacity:1}
+.sc:hover::after{transform:scale(1.8)}
+.sc-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.sc-ico{
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  background:rgba(201,168,76,.09);border:1px solid rgba(201,168,76,.16)
+}
+.sc-ico svg{width:20px;height:20px;stroke:var(--g1);stroke-width:1.8}
+.sc-badge{font-size:.62rem;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.04em;align-self:flex-start}
+.sc-badge.live{background:rgba(78,201,148,.12);color:var(--grn);border:1px solid rgba(78,201,148,.2)}
+.sc-badge.week{background:rgba(78,143,232,.12);color:var(--blu);border:1px solid rgba(78,143,232,.2)}
+.sc-badge.month{background:rgba(232,168,78,.12);color:var(--ylw);border:1px solid rgba(232,168,78,.2)}
+.sc-lbl{font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ts);margin-bottom:6px;font-weight:600}
+.sc-num{font-family:var(--fd);font-size:2.9rem;font-weight:700;color:var(--g1);line-height:1;margin-bottom:8px;animation:countUp .5s ease}
+.sc-sub{font-size:.67rem;color:var(--ts);display:flex;align-items:center;gap:5px}
+.sc-sub svg{width:11px;height:11px;stroke:var(--ts);stroke-width:2}
+
+/* ══ ADMIN NAV ══════════════════════════════════ */
+.anav{
+  display:flex;gap:4px;flex-wrap:wrap;
+  background:rgba(8,15,28,.85);border:1px solid var(--bdr);
+  border-radius:var(--r2);padding:5px;margin-bottom:22px;
+  backdrop-filter:blur(12px)
+}
+.anb{
+  display:flex;align-items:center;gap:8px;padding:10px 18px;
+  border:none;background:transparent;color:var(--ts);font-family:var(--fb);
+  font-size:.74rem;font-weight:700;cursor:pointer;border-radius:10px;
+  transition:all var(--t);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap
+}
+.anb svg{width:14px;height:14px;flex-shrink:0;stroke-width:2.2}
+.anb.active{background:linear-gradient(135deg,var(--g4),var(--g1),var(--g2));color:var(--n0);box-shadow:0 4px 16px rgba(201,168,76,.3)}
+.anb:not(.active):hover{color:var(--g2);background:rgba(201,168,76,.06)}
+.apanel{display:none}
+.apanel.active{display:block;animation:fadeIn .25s ease}
+
+/* ══ SEARCH SECTION ══════════════════════════════ */
+.search-section{margin-bottom:20px}
+.search-row1{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.search-row2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Search input */
+.si-wrap{position:relative;flex:1;min-width:200px}
+.si-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--ts);stroke-width:2;pointer-events:none}
+.si-wrap input{
+  width:100%;padding:10px 14px 10px 38px;
+  background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:var(--r3);
+  color:var(--tm);font-family:var(--fb);font-size:.83rem;outline:none;
+  transition:border-color var(--t),box-shadow var(--t)
+}
+.si-wrap input:focus{border-color:var(--g1);box-shadow:0 0 0 3px rgba(201,168,76,.08)}
+.si-wrap input::placeholder{color:var(--c3);font-size:.78rem}
+
+/* Date filter button */
+.date-filter-wrap{display:flex;gap:4px;align-items:center;position:relative}
+.date-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 16px;
+  background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:var(--r3);
+  color:var(--ts);font-family:var(--fb);font-size:.78rem;font-weight:600;
+  cursor:pointer;transition:all var(--t);white-space:nowrap;position:relative
+}
+.date-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;flex-shrink:0}
+.date-btn:hover{border-color:var(--g1);color:var(--g1);background:rgba(201,168,76,.06)}
+.date-btn.active{border-color:var(--g1);color:var(--g1);background:rgba(201,168,76,.1)}
+.date-btn-badge{
+  background:var(--g1);color:var(--n0);font-size:.6rem;font-weight:800;
+  padding:2px 7px;border-radius:4px;letter-spacing:.04em;max-width:130px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.date-hidden{
+  position:absolute;opacity:0;pointer-events:none;
+  width:1px;height:1px;top:100%;left:0
+}
+.date-clear-btn{
+  display:flex;align-items:center;justify-content:center;
+  width:34px;height:34px;border-radius:8px;border:1px solid var(--bdr);
+  background:rgba(232,85,85,.07);color:var(--red);cursor:pointer;
+  transition:all var(--t);flex-shrink:0
+}
+.date-clear-btn svg{width:13px;height:13px;stroke:currentColor;stroke-width:2.5}
+.date-clear-btn:hover{background:rgba(232,85,85,.18);border-color:var(--red)}
+
+/* Filter type buttons */
+.ftb{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:var(--r3);border:1px solid;
+  font-family:var(--fb);font-size:.72rem;font-weight:700;
+  cursor:pointer;transition:all var(--t);white-space:nowrap;
+  letter-spacing:.04em;text-transform:uppercase;background:transparent
+}
+.ftb.konv{color:var(--ylw);border-color:rgba(232,168,78,.22)}
+.ftb.konv:hover{background:rgba(232,168,78,.1);border-color:var(--ylw)}
+.ftb.elec{color:var(--grn);border-color:rgba(78,201,148,.22)}
+.ftb.elec:hover{background:rgba(78,201,148,.1);border-color:var(--grn)}
+.search-spacer{flex:1}
+
+/* DB Action row */
+.db-actions{display:flex;gap:6px;align-items:center}
+.db-total-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 13px;
+  background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.16);border-radius:8px;
+  font-size:.72rem;color:var(--g1);font-weight:700;letter-spacing:.04em
+}
+.db-total-badge span{color:var(--ts);font-weight:400}
+
+/* ══ TABLE ══════════════════════════════════════ */
+.tw{overflow-x:auto;border-radius:12px;border:1px solid var(--bdr)}
+table{width:100%;border-collapse:collapse;font-size:.8rem;min-width:700px}
+thead{background:rgba(23,38,57,.9);position:sticky;top:0;z-index:2}
+thead th{
+  padding:12px 14px;text-align:left;
+  font-size:.59rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--g1);font-weight:700;white-space:nowrap;
+  border-bottom:1px solid rgba(201,168,76,.18)
+}
+tbody tr{border-bottom:1px solid rgba(255,255,255,.03);transition:background var(--t)}
+tbody tr:hover{background:rgba(201,168,76,.04)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:nth-child(even){background:rgba(255,255,255,.012)}
+tbody tr:nth-child(even):hover{background:rgba(201,168,76,.04)}
+tbody td{padding:11px 14px;color:var(--tm);vertical-align:middle}
+.dm{font-size:.67rem;color:var(--ts);display:block;margin-top:2px}
+.new-row{animation:highlightRow 2.5s ease forwards}
+
+/* Badges */
+.bg{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-size:.62rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.bg-g{background:rgba(201,168,76,.12);color:var(--g1);border:1px solid rgba(201,168,76,.2)}
+.bg-grn{background:rgba(78,201,148,.12);color:var(--grn);border:1px solid rgba(78,201,148,.2)}
+.bg-blu{background:rgba(78,143,232,.12);color:var(--blu);border:1px solid rgba(78,143,232,.2)}
+.bg-ylw{background:rgba(232,168,78,.12);color:var(--ylw);border:1px solid rgba(232,168,78,.2)}
+.bg-red{background:rgba(232,85,85,.12);color:var(--red);border:1px solid rgba(232,85,85,.2)}
+
+/* Thumbnail */
+.ti{width:52px;height:38px;object-fit:cover;border-radius:7px;border:1px solid var(--bdr);cursor:pointer;transition:transform var(--t),box-shadow var(--t)}
+.ti:hover{transform:scale(1.15);box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.ab{display:flex;gap:4px;flex-wrap:wrap}
+
+/* ══ ONLINE USERS ══════════════════════════════ */
+.oui{
+  display:flex;align-items:center;gap:15px;padding:14px 18px;
+  background:rgba(255,255,255,.025);border:1px solid var(--bdr);
+  border-radius:10px;margin-bottom:8px;transition:background var(--t)
+}
+.oui:hover{background:rgba(255,255,255,.05)}
+.od{width:10px;height:10px;border-radius:50%;background:var(--grn);box-shadow:0 0 10px var(--grn);flex-shrink:0}
+
+/* ══ MODAL ══════════════════════════════════════ */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.mo.open{display:flex}
+.md{
+  background:linear-gradient(145deg,rgba(23,38,57,.98),rgba(17,31,48,.98));
+  border:1px solid rgba(201,168,76,.22);border-radius:24px;width:100%;
+  max-height:90vh;overflow-y:auto;
+  box-shadow:var(--sh),0 0 80px rgba(0,0,0,.5);
+  animation:fadeUp .3s cubic-bezier(.16,1,.3,1);position:relative
+}
+.md::before{content:'';position:absolute;top:0;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,.38),transparent)}
+.mh{padding:22px 26px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.mt{font-family:var(--fd);font-size:1.2rem;color:var(--g1);font-weight:700}
+.mc{width:32px;height:32px;border:none;background:rgba(255,255,255,.05);border-radius:8px;cursor:pointer;color:var(--ts);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all var(--t)}
+.mc:hover{background:rgba(232,85,85,.18);color:var(--red)}
+.mb{padding:22px 26px}
+.mf{padding:16px 26px;border-top:1px solid var(--bdr);display:flex;gap:10px;justify-content:flex-end}
+
+/* ══ TOAST ══════════════════════════════════════ */
+.tc{position:fixed;top:82px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;max-width:340px;width:calc(100vw - 36px)}
+.tn{
+  background:linear-gradient(135deg,rgba(23,38,57,.98),rgba(17,31,48,.98));
+  border:1px solid rgba(201,168,76,.22);border-radius:14px;padding:13px 17px;
+  box-shadow:var(--sh2);display:flex;align-items:flex-start;gap:12px;
+  animation:slideInRight .3s ease,fadeOut .4s ease 2.9s forwards;
+  pointer-events:all;backdrop-filter:blur(14px)
+}
+.tn-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem;font-weight:700}
+.tn.success .tn-ico{background:rgba(78,201,148,.14);color:var(--grn)}
+.tn.error   .tn-ico{background:rgba(232,85,85,.14);color:var(--red)}
+.tn.info    .tn-ico{background:rgba(78,143,232,.14);color:var(--blu)}
+.tn.warning .tn-ico{background:rgba(232,168,78,.14);color:var(--ylw)}
+.tn-b .tn-tt{font-weight:700;font-size:.78rem;color:var(--tm);margin-bottom:2px}
+.tn-b .tn-mm{font-size:.76rem;color:var(--ts);line-height:1.45}
+
+/* Lightbox */
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:2000;display:none;align-items:center;justify-content:center;cursor:zoom-out}
+.lb.open{display:flex}
+.lb img{max-width:90vw;max-height:90vh;border-radius:14px;object-fit:contain;box-shadow:0 24px 64px rgba(0,0,0,.9)}
+
+/* Progress bar */
+.pgbar{position:fixed;top:0;left:0;right:0;height:2px;z-index:9000;background:linear-gradient(90deg,var(--g4),var(--g1),var(--g2),var(--g1),var(--g4));background-size:300% 100%;animation:shimmer 1.2s linear infinite;transform:scaleX(0);transform-origin:left;transition:transform .3s;display:none}
+.pgbar.on{display:block;transform:scaleX(1)}
+
+/* Empty state */
+.es{text-align:center;padding:52px 24px;color:var(--ts)}
+.es-ico{width:68px;height:68px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.es-ico svg{width:30px;height:30px;stroke:var(--ts);opacity:.4;stroke-width:1.5}
+.es h3{font-family:var(--fd);font-size:1.1rem;color:var(--c2);margin-bottom:6px}
+.es p{font-size:.84rem}
+
+/* Login error */
+.le{background:rgba(232,85,85,.09);border:1px solid rgba(232,85,85,.24);border-radius:9px;padding:12px 16px;color:var(--red);font-size:.83rem;margin-bottom:18px;display:none;align-items:center;gap:9px}
+.le.show{display:flex}
+.le svg{width:16px;height:16px;flex-shrink:0;stroke:var(--red);stroke-width:2}
+
+/* Live indicator */
+.live-ind{display:flex;align-items:center;gap:7px;font-size:.7rem;color:var(--grn);font-weight:700;letter-spacing:.05em}
+.live-ind .d{width:8px;height:8px;border-radius:50%;background:var(--grn);animation:pulse 2s ease-in-out infinite}
+
+/* Quick info bar */
+.quick-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.qb-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 16px;
+  background:rgba(17,31,48,.8);border:1px solid var(--bdr);border-radius:11px;
+  flex:1;min-width:140px
+}
+.qb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.qb-dot.grn{background:var(--grn);box-shadow:0 0 8px var(--grn);animation:pulse 2.5s ease-in-out infinite}
+.qb-dot.gold{background:var(--g1);box-shadow:0 0 8px rgba(201,168,76,.6)}
+.qb-dot.blu{background:var(--blu);box-shadow:0 0 8px rgba(78,143,232,.5)}
+.qb-text{font-size:.73rem;color:var(--ts)}
+.qb-text strong{color:var(--tm);display:block;font-size:.82rem;font-weight:700;margin-bottom:1px}
+
+/* Divider label */
+.section-label{
+  font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ts);font-weight:700;margin-bottom:12px;
+  display:flex;align-items:center;gap:10px
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* ══ RESPONSIVE ══════════════════════════════════ */
+@media(max-width:900px){.sg{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){
+  .main{padding:14px}
+  .topbar{padding:0 14px;height:62px}
+  .tb-text p,.tb-clock,.timer{display:none}
+  .fg2{grid-template-columns:1fr}
+  .fc{grid-column:1}
+  .sg{grid-template-columns:1fr}
+  .lc{padding:36px 22px}
+  .anav{gap:3px;padding:4px}
+  .anb{padding:9px 12px;font-size:.68rem}
+  .anb span{display:none}
+  .search-row1,.search-row2{flex-direction:column;align-items:stretch}
+  .search-spacer{display:none}
+  .date-filter-wrap{width:100%}
+  .date-btn{flex:1}
+  .db-actions{justify-content:stretch}
+  .db-actions .btn{flex:1}
+  .md{border-radius:20px}
+  .tb-right{gap:7px}
+  .ub-nm{display:none}
+  .sc-num{font-size:2.3rem}
+  .tabs{flex-direction:column}
+  .tc{top:70px;right:10px;left:10px;max-width:100%}
+  .quick-bar{display:none}
+}
+@media(max-width:480px){
+  .topbar{height:58px}
+  .ph h1{font-size:1.65rem}
+  .sc{padding:16px}
+  .sc-num{font-size:2rem}
+  .cb{padding:16px}
+  .ch{padding:14px 16px}
+  .mh,.mb,.mf{padding-left:16px;padding-right:16px}
+  .lc-emblem{width:62px;height:62px;font-size:1.7rem}
+  .lc-logo h1{font-size:2.2rem}
+}
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<div class="pgbar" id="pgbar"></div>
+
+<!-- TOAST -->
+<div class="tc" id="tc"></div>
+
+<!-- LIGHTBOX -->
+<div class="lb" id="lb" onclick="closeLB()">
+  <img id="lbImg" src="" alt="">
+</div>
+
+<!-- ════════════════════ LOGIN PAGE ════════════════════ -->
+<div id="loginPage" class="page active">
+  <div class="lp-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+  <div class="lp-grid"></div>
+  <div class="lp-scan"></div>
+  <div class="lc-wrap">
+    <div class="lc">
+      <div class="lc-logo">
+        <div class="lc-emblem">M</div>
+        <div class="lc-orn">
+          <div class="orn-ln"></div>
+          <div class="orn-dia"></div>
+          <div class="orn-ln r"></div>
+        </div>
+        <h1>MERUSAKA</h1>
+        <p>Hotel Security System</p>
+      </div>
+      <div class="lc-bar"></div>
+
+      <div class="le" id="loginErr">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Username atau password salah
+      </div>
+
+      <div class="fg">
+        <label>Username</label>
+        <div class="ig">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <input class="fi" type="text" id="lun" placeholder="Masukkan username" autocomplete="off">
+        </div>
+      </div>
+      <div class="fg">
+        <label>Password</label>
+        <div class="ig">
+          <div class="ig-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <input class="fi" type="password" id="lpw" placeholder="Masukkan password" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+      </div>
+      <button class="btn btn-gold btn-full" style="margin-top:8px;padding:14px" onclick="doLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Masuk ke Sistem
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ USER PAGE ════════════════════ -->
+<div id="userPage" class="page">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-icon">M</div>
+      <div class="tb-text"><h2>MERUSAKA</h2><p>Gate Officer</p></div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-clock">
+        <div class="tb-clock-time" id="uClockTime">--:--:--</div>
+        <div class="tb-clock-date" id="uClockDate">---</div>
+      </div>
+      <div class="timer" id="tmr">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="tmrVal">2:00:00</span>
+      </div>
+      <div class="ub">
+        <div class="ub-av" id="uAv">U</div>
+        <div><div class="ub-nm" id="uNm">User</div><div class="ub-rl">Petugas</div></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Keluar
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="ph">
+      <div class="ph-row">
+        <div>
+          <h1>Input Kendaraan</h1>
+          <p>Catat kendaraan yang memasuki area hotel secara real-time</p>
+        </div>
+        <div class="live-badge"><div class="dot"></div>Sistem Aktif</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tbb active" onclick="switchTab('Pri',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3m2 0h3l3 4v3h-3m0 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-9 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>
+        Kendaraan Pribadi
+      </button>
+      <button class="tbb" onclick="switchTab('Tax',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Kendaraan Taxi
+      </button>
+    </div>
+
+    <!-- TAB PRIBADI -->
+    <div class="tbc active" id="tPri">
+      <div class="card">
+        <div class="ch">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3m2 0h3l3 4v3h-3m0 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-9 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>Data Kendaraan Pribadi</div>
+          <span class="bg bg-g">✦ Semua Kolom Wajib Diisi</span>
+        </div>
+        <div class="cb">
+          <div class="fg2">
+            <div class="fg fc">
+              <label>Foto Kendaraan <span class="req">*</span></label>
+              <div class="pc-wrap" id="ppW">
+                <div class="pc-ph" id="ppPh">
+                  <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+                  <p>Ambil Foto Kendaraan</p>
+                  <span>Ketuk untuk membuka kamera</span>
+                </div>
+                <img id="ppImg" class="pc-img" src="" alt="">
+                <div class="pc-change">↻ Ganti Foto</div>
+                <input type="file" class="pc-file" id="ppFile" accept="image/*" capture="environment" onchange="onPhoto(this,'ppImg','ppPh','ppW')">
+              </div>
+              <div class="ferr" id="ppErr">Foto kendaraan wajib diambil</div>
+            </div>
+
+            <div class="fg fc">
+              <label>Jenis Kendaraan <span class="req">*</span></label>
+              <div class="rg" id="priJenis">
+                <label class="ro" onclick="selRad(this,'priJenis')"><input type="radio" name="priJenis" value="konvensional"><div class="rd"></div><span class="rl">⛽ Konvensional</span></label>
+                <label class="ro" onclick="selRad(this,'priJenis')"><input type="radio" name="priJenis" value="listrik"><div class="rd"></div><span class="rl">⚡ Listrik</span></label>
+              </div>
+              <div class="ferr" id="priJenisErr">Pilih jenis kendaraan</div>
+            </div>
+
+            <div class="fg">
+              <label>No. Plat Kendaraan <span class="req">*</span></label>
+              <input class="fi" type="text" id="priPlat" placeholder="cth: DK 1234 AB" style="text-transform:uppercase">
+              <div class="ferr" id="priPlatErr">No. plat wajib diisi</div>
+            </div>
+            <div class="fg">
+              <label>Merk Kendaraan <span class="req">*</span></label>
+              <input class="fi" type="text" id="priMerk" placeholder="cth: Toyota, Honda, BMW...">
+              <div class="ferr" id="priMerkErr">Merk kendaraan wajib diisi</div>
+            </div>
+            <div class="fg">
+              <label>Warna Kendaraan <span class="req">*</span></label>
+              <input class="fi" type="text" id="priWarna" placeholder="cth: Putih, Hitam, Silver...">
+              <div class="ferr" id="priWarnaErr">Warna kendaraan wajib diisi</div>
+            </div>
+            <div class="fg">
+              <label>Tujuan <span class="req">*</span></label>
+              <input class="fi" type="text" id="priTujuan" placeholder="cth: Lobby, Restaurant, Spa...">
+              <div class="ferr" id="priTujuanErr">Tujuan wajib diisi</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+            <button class="btn btn-gold" onclick="savePri()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Simpan Data
+            </button>
+            <button class="btn btn-ghost" onclick="resetF('pri')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.03"/></svg>
+              Reset Form
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB TAXI -->
+    <div class="tbc" id="tTax">
+      <div class="card">
+        <div class="ch">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Data Kendaraan Taxi</div>
+          <span class="bg bg-blu">✦ Semua Kolom Wajib Diisi</span>
+        </div>
+        <div class="cb">
+          <div class="fg2">
+            <div class="fg fc">
+              <label>Foto Kendaraan <span class="req">*</span></label>
+              <div class="pc-wrap" id="txW">
+                <div class="pc-ph" id="txPh">
+                  <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+                  <p>Ambil Foto Kendaraan</p>
+                  <span>Ketuk untuk membuka kamera</span>
+                </div>
+                <img id="txImg" class="pc-img" src="" alt="">
+                <div class="pc-change">↻ Ganti Foto</div>
+                <input type="file" class="pc-file" id="txFile" accept="image/*" capture="environment" onchange="onPhoto(this,'txImg','txPh','txW')">
+              </div>
+              <div class="ferr" id="txErr">Foto kendaraan wajib diambil</div>
+            </div>
+
+            <div class="fg">
+              <label>No. Lambung Taxi <span class="req">*</span></label>
+              <input class="fi" type="text" id="txLambung" placeholder="cth: 1234" style="text-transform:uppercase">
+              <div class="ferr" id="txLambungErr">No. lambung wajib diisi</div>
+            </div>
+            <div class="fg">
+              <label>Nama Perusahaan Taxi <span class="req">*</span></label>
+              <input class="fi" type="text" id="txPerus" placeholder="cth: Blue Bird, Grab, Gojek...">
+              <div class="ferr" id="txPerusErr">Nama perusahaan wajib diisi</div>
+            </div>
+            <div class="fg fc">
+              <label>Jenis Kendaraan <span class="req">*</span></label>
+              <div class="rg" id="taxJenis">
+                <label class="ro" onclick="selRad(this,'taxJenis')"><input type="radio" name="taxJenis" value="konvensional"><div class="rd"></div><span class="rl">⛽ Konvensional</span></label>
+                <label class="ro" onclick="selRad(this,'taxJenis')"><input type="radio" name="taxJenis" value="listrik"><div class="rd"></div><span class="rl">⚡ Listrik</span></label>
+              </div>
+              <div class="ferr" id="taxJenisErr">Pilih jenis kendaraan</div>
+            </div>
+            <div class="fg fc">
+              <label>Tujuan <span class="req">*</span></label>
+              <input class="fi" type="text" id="txTujuan" placeholder="cth: Drop-off Lobby, Main Entrance...">
+              <div class="ferr" id="txTujuanErr">Tujuan wajib diisi</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+            <button class="btn btn-gold" onclick="saveTax()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Simpan Data
+            </button>
+            <button class="btn btn-ghost" onclick="resetF('tax')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.03"/></svg>
+              Reset Form
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ ADMIN PAGE ════════════════════ -->
+<div id="adminPage" class="page">
+  <div class="topbar">
+    <div class="tb-brand">
+      <div class="tb-icon">M</div>
+      <div class="tb-text"><h2>MERUSAKA</h2><p>Admin Dashboard</p></div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-clock">
+        <div class="tb-clock-time" id="aClockTime">--:--:--</div>
+        <div class="tb-clock-date" id="aClockDate">---</div>
+      </div>
+      <div class="ub">
+        <div class="ub-av" style="background:linear-gradient(135deg,var(--g4),var(--g2))">A</div>
+        <div><div class="ub-nm">Administrator</div><div class="ub-rl">Super Admin</div></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Keluar
+      </button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="ph">
+      <div class="ph-row">
+        <div><h1>Admin Dashboard</h1><p>Monitoring & manajemen kendaraan hotel secara real-time</p></div>
+        <div class="live-badge"><div class="dot"></div>Live Monitor</div>
+      </div>
+    </div>
+
+    <!-- Quick Info Bar -->
+    <div class="quick-bar">
+      <div class="qb-item">
+        <div class="qb-dot grn"></div>
+        <div class="qb-text"><strong id="qbHari">0</strong>Hari Ini</div>
+      </div>
+      <div class="qb-item">
+        <div class="qb-dot blu"></div>
+        <div class="qb-text"><strong id="qbPribadi">0</strong>Kendaraan Pribadi</div>
+      </div>
+      <div class="qb-item">
+        <div class="qb-dot gold"></div>
+        <div class="qb-text"><strong id="qbTaxi">0</strong>Kendaraan Taxi</div>
+      </div>
+      <div class="qb-item">
+        <div class="qb-dot grn" style="background:var(--grn)"></div>
+        <div class="qb-text"><strong id="qbListrik">0</strong>Kendaraan Listrik</div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="sg">
+      <div class="sc" onclick="showStat('harian')">
+        <div class="sc-hd">
+          <div class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <span class="sc-badge live">● Live</span>
+        </div>
+        <div class="sc-lbl">Kendaraan Hari Ini</div>
+        <div class="sc-num" id="sHar">0</div>
+        <div class="sc-sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Klik untuk lihat detail</div>
+      </div>
+      <div class="sc" onclick="showStat('mingguan')">
+        <div class="sc-hd">
+          <div class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <span class="sc-badge week">7 Hari</span>
+        </div>
+        <div class="sc-lbl">Minggu Ini</div>
+        <div class="sc-num" id="sMin">0</div>
+        <div class="sc-sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>7 hari terakhir</div>
+      </div>
+      <div class="sc" onclick="showStat('bulanan')">
+        <div class="sc-hd">
+          <div class="sc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><polyline points="18 17 13 12 9 16 5 12"/></svg></div>
+          <span class="sc-badge month">Bulan Ini</span>
+        </div>
+        <div class="sc-lbl">Bulan Ini</div>
+        <div class="sc-num" id="sBul">0</div>
+        <div class="sc-sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Bulan berjalan</div>
+      </div>
+    </div>
+
+    <!-- ADMIN NAV -->
+    <div class="anav">
+      <button class="anb active" onclick="swAdm('Db',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        <span>Database</span>
+      </button>
+      <button class="anb" onclick="swAdm('Usr',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Kelola User</span>
+      </button>
+      <button class="anb" onclick="swAdm('Onl',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>User Online</span>
+      </button>
+      <button class="anb" onclick="swAdm('Set',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M19.07 4.93A10 10 0 1 1 4.93 19.07"/></svg>
+        <span>Pengaturan</span>
+      </button>
+    </div>
+
+    <!-- ─── PANEL: DATABASE ─── -->
+    <div id="pDb" class="apanel active">
+      <div class="card">
+        <div class="ch">
+          <div class="ct">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Database Kendaraan
+          </div>
+          <div class="live-ind"><div class="d"></div>Live Auto-Update</div>
+        </div>
+        <div class="cb">
+
+          <!-- Search Row 1: text search + date filter + reset -->
+          <div class="search-row1">
+            <div class="si-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="srchQ" placeholder="Cari plat, lambung, petugas..." oninput="filterDB()">
+            </div>
+
+            <!-- Date filter button (icon calendar) -->
+            <div class="date-filter-wrap">
+              <button class="date-btn" id="dateBtnToggle" onclick="openDatePicker()" title="Filter berdasarkan tanggal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span id="dateBtnLabel">Filter Tanggal</span>
+                <!-- Hidden native date input, triggered by button above -->
+                <input type="date" id="srchDate" class="date-hidden" onchange="onDateChange()">
+              </button>
+              <button class="date-clear-btn" id="dateClearBtn" onclick="clearDateFilter()" title="Hapus filter tanggal" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            <button class="btn btn-ghost btn-sm" onclick="showAll()" title="Tampilkan semua data">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/></svg>
+              Semua
+            </button>
+          </div>
+
+          <!-- Search Row 2: type filters + spacer + download/restore -->
+          <div class="search-row2" style="margin-bottom:20px">
+            <button class="ftb konv" onclick="filterType('konvensional')">⛽ Konvensional</button>
+            <button class="ftb elec" onclick="filterType('listrik')">⚡ Listrik</button>
+            <div class="search-spacer"></div>
+
+            <!-- Total badge -->
+            <div class="db-total-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px;stroke-width:2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <span>Total:</span> <strong id="dbTotalCount">0</strong>
+            </div>
+
+            <!-- Download & Restore -->
+            <div class="db-actions">
+              <button class="btn btn-grn btn-sm" onclick="downloadDB()" title="Download database ke file JSON">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download DB
+              </button>
+              <button class="btn btn-ylw btn-sm" onclick="$('restoreFile').click()" title="Restore database dari file JSON">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Restore DB
+              </button>
+              <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreDB(this)">
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th><th>Foto</th><th>Tipe</th><th>Plat / Lambung</th>
+                  <th>Jenis</th><th>Merk / Perusahaan</th><th>Warna</th>
+                  <th>Tujuan</th><th>Petugas</th><th>Tanggal & Jam</th><th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="vTbody"></tbody>
+            </table>
+          </div>
+          <div id="vEmpty" class="es" style="display:none">
+            <div class="es-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div>
+            <h3>Database Kosong</h3><p>Belum ada data kendaraan yang tersimpan</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PANEL: USERS ─── -->
+    <div id="pUsr" class="apanel">
+      <div class="card">
+        <div class="ch">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Kelola Pengguna</div>
+          <button class="btn btn-gold btn-sm" onclick="openAddUser()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah User
+          </button>
+        </div>
+        <div class="cb">
+          <div class="tw">
+            <table>
+              <thead><tr><th>#</th><th>Username</th><th>Role</th><th>Dibuat</th><th>Aksi</th></tr></thead>
+              <tbody id="uTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── PANEL: ONLINE ─── -->
+    <div id="pOnl" class="apanel">
+      <div class="card">
+        <div class="ch">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>User Sedang Online</div>
+          <button class="btn btn-ghost btn-sm" onclick="refreshOnline()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Refresh
+          </button>
+        </div>
+        <div class="cb" id="onlineList"></div>
+      </div>
+    </div>
+
+    <!-- ─── PANEL: SETTINGS ─── -->
+    <div id="pSet" class="apanel">
+      <div class="card">
+        <div class="ch">
+          <div class="ct"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 4.93 19.07M19.07 4.93A10 10 0 1 1 4.93 19.07"/></svg>Pengaturan Password Admin</div>
+        </div>
+        <div class="cb">
+          <div style="max-width:420px">
+            <div class="fg"><label>Password Baru Admin <span class="req">*</span></label><input class="fi" type="password" id="newAdmPw" placeholder="Minimal 4 karakter"></div>
+            <div class="fg"><label>Konfirmasi Password <span class="req">*</span></label><input class="fi" type="password" id="cfmAdmPw" placeholder="Ulangi password baru"></div>
+            <button class="btn btn-gold" onclick="changeAdmPw()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Simpan Password
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════ MODALS ════════════════════ -->
+
+<!-- Modal: User -->
+<div class="mo" id="mUser">
+  <div class="md" style="max-width:440px">
+    <div class="mh"><div class="mt" id="mUserTt">Tambah User</div><button class="mc" onclick="closeM('mUser')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="eUid">
+      <div class="fg"><label>Username</label><input class="fi" type="text" id="eUnm" placeholder="Masukkan username"></div>
+      <div class="fg"><label>Password</label><input class="fi" type="password" id="ePw" placeholder="Masukkan password"></div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mUser')">Batal</button><button class="btn btn-gold" onclick="saveUser()">Simpan</button></div>
+  </div>
+</div>
+
+<!-- Modal: Edit Vehicle -->
+<div class="mo" id="mEV">
+  <div class="md" style="max-width:540px">
+    <div class="mh"><div class="mt">Edit Data Kendaraan</div><button class="mc" onclick="closeM('mEV')">✕</button></div>
+    <div class="mb">
+      <input type="hidden" id="eVid">
+      <div class="fg2">
+        <div class="fg fc"><label>No. Plat / No. Lambung</label><input class="fi" type="text" id="eVplat" style="text-transform:uppercase"></div>
+        <div class="fg fc"><label>Jenis</label><select class="fi" id="eVjenis"><option value="konvensional">⛽ Konvensional</option><option value="listrik">⚡ Listrik</option></select></div>
+        <div class="fg"><label>Merk / Perusahaan</label><input class="fi" type="text" id="eVmerk"></div>
+        <div class="fg"><label>Warna</label><input class="fi" type="text" id="eVwarna"></div>
+        <div class="fg fc"><label>Tujuan</label><input class="fi" type="text" id="eVtujuan"></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mEV')">Batal</button><button class="btn btn-gold" onclick="saveEV()">Simpan Perubahan</button></div>
+  </div>
+</div>
+
+<!-- Modal: Confirm Delete -->
+<div class="mo" id="mDel">
+  <div class="md" style="max-width:380px">
+    <div class="mh"><div class="mt" style="color:var(--red)">Konfirmasi Hapus</div><button class="mc" onclick="closeM('mDel')">✕</button></div>
+    <div class="mb">
+      <div style="display:flex;gap:16px;align-items:flex-start">
+        <div style="width:46px;height:46px;border-radius:12px;background:rgba(232,85,85,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        <p id="delTxt" style="font-size:.87rem;color:var(--tm);line-height:1.65;padding-top:6px"></p>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mDel')">Batal</button><button class="btn btn-red" id="delBtn">Hapus</button></div>
+  </div>
+</div>
+
+<!-- Modal: Stat Detail -->
+<div class="mo" id="mStat">
+  <div class="md" style="max-width:800px">
+    <div class="mh"><div class="mt" id="mStatTt">Detail Kendaraan</div><button class="mc" onclick="closeM('mStat')">✕</button></div>
+    <div class="mb">
+      <div class="tw">
+        <table>
+          <thead><tr><th>#</th><th>Foto</th><th>Tipe</th><th>Plat/Lambung</th><th>Jenis</th><th>Merk</th><th>Tujuan</th><th>Petugas</th><th>Waktu</th></tr></thead>
+          <tbody id="stTbody"></tbody>
+        </table>
+      </div>
+      <div id="stEmpty" class="es" style="display:none">
+        <div class="es-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <h3>Tidak Ada Data</h3><p>Tidak ada kendaraan pada periode ini</p>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-ghost" onclick="closeM('mStat')">Tutup</button></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─── SHORTHAND ────────────────────────────────
+const $ = id => document.getElementById(id);
+
+// ─── STATE ────────────────────────────────────
+let _token    = null;   // JWT token (in memory only)
+let CU        = null;   // Current user object
+let _vehCache = [];     // Cached vehicle list
+let _usrCache = [];     // Cached user list
+let _ph       = {};     // In-memory photo data (before upload)
+let _pollInt  = null;   // Auto-refresh interval (admin)
+let _sto      = null;   // Session timeout
+let _sti      = null;   // Session countdown interval
+let _clockInt = null;   // Clock interval
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const SES = 7200000; // 2 hours
+
+// ─── API HELPER ───────────────────────────────
+async function api(method, path, body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (_token) opts.headers['Authorization'] = 'Bearer ' + _token;
+  if (body !== null) opts.body = JSON.stringify(body);
+  let res;
+  try {
+    res = await fetch('/api' + path, opts);
+  } catch (e) {
+    throw new Error('Tidak dapat terhubung ke server. Periksa koneksi jaringan.');
+  }
+  if (res.status === 401) {
+    doLogout();
+    throw new Error('Sesi berakhir, silakan login kembali.');
+  }
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Terjadi kesalahan pada server.');
+  return data;
+}
+
+// ─── PHOTO COMPRESSION ────────────────────────
+function compress(url, maxPx = 900, q = 0.72) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      let { width: w, height: h } = img;
+      if (w > maxPx || h > maxPx) {
+        if (w >= h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      res(c.toDataURL('image/jpeg', q));
+    };
+    img.src = url;
+  });
+}
+
+// ─── CLOCK ────────────────────────────────────
+function startClock() {
+  if (_clockInt) clearInterval(_clockInt);
+  function tick() {
+    const now  = new Date();
+    const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const date = now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    const aT = $('aClockTime'), aD = $('aClockDate');
+    const uT = $('uClockTime'), uD = $('uClockDate');
+    if (aT) aT.textContent = time; if (aD) aD.textContent = date;
+    if (uT) uT.textContent = time; if (uD) uD.textContent = date;
+  }
+  tick();
+  _clockInt = setInterval(tick, 1000);
+}
+
+// ─── AUTH ─────────────────────────────────────
+async function doLogin() {
+  const un  = $('lun').value.trim();
+  const pw  = $('lpw').value;
+  const err = $('loginErr');
+  err.classList.remove('show');
+  pg(1);
+  try {
+    const data = await api('POST', '/auth/login', { username: un, password: pw });
+    _token = data.token;
+    CU     = data.user;
+    if (CU.role === 'admin') {
+      showPage('adminPage');
+      initAdmin();
+    } else {
+      showPage('userPage');
+      initUser();
+      startTimer();
+    }
+  } catch (e) {
+    err.classList.add('show');
+    shakeEl(document.querySelector('.lc'));
+  }
+  pg(0);
+}
+
+async function doLogout() {
+  if (_token) {
+    try { await api('POST', '/auth/logout'); } catch {}
+  }
+  _token    = null;
+  CU        = null;
+  _vehCache = [];
+  _usrCache = [];
+  if (_pollInt) { clearInterval(_pollInt); _pollInt = null; }
+  clearTimeout(_sto); clearInterval(_sti);
+  $('lun').value = ''; $('lpw').value = '';
+  showPage('loginPage');
+}
+
+function startTimer() {
+  let r = SES; updT(r);
+  _sto = setTimeout(() => { toast('Sesi berakhir, silakan login kembali.', 'warning'); doLogout(); }, SES);
+  _sti = setInterval(() => { r -= 1000; updT(r); if (r <= 0) clearInterval(_sti); }, 1000);
+}
+function updT(ms) {
+  const el = $('tmrVal'); if (!el) return;
+  const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000), s = Math.floor((ms % 60000) / 1000);
+  el.textContent = `${p2(h)}:${p2(m)}:${p2(s)}`;
+  if (ms < 600000) el.parentElement.style.borderColor = 'rgba(232,85,85,.4)';
+}
+const p2 = n => String(n).padStart(2, '0');
+
+// ─── PAGES ────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+function initUser() {
+  $('uAv').textContent = CU.username[0].toUpperCase();
+  $('uNm').textContent = CU.username;
+  startClock();
+}
+
+async function initAdmin() {
+  startClock();
+  await Promise.all([ loadVehicles(), loadStats() ]);
+  renderUTable();
+  // Auto-refresh every 30s to pick up changes from other users
+  if (_pollInt) clearInterval(_pollInt);
+  _pollInt = setInterval(async () => {
+    if (!$('adminPage').classList.contains('active')) return;
+    await Promise.all([ loadVehicles(), loadStats() ]);
+  }, 30000);
+}
+
+// ─── DATA LOADING ─────────────────────────────
+async function loadVehicles() {
+  try {
+    _vehCache = await api('GET', '/vehicles');
+    renderVTable(_vehCache);
+  } catch (e) {
+    toast('Gagal memuat data kendaraan: ' + e.message, 'error');
+  }
+}
+
+async function loadStats() {
+  try {
+    const s = await api('GET', '/stats');
+    $('sHar').textContent = s.today;
+    $('sMin').textContent = s.minggu;
+    $('sBul').textContent = s.bulan;
+    const qH = $('qbHari');    if (qH) qH.textContent = s.today;
+    const qP = $('qbPribadi'); if (qP) qP.textContent = s.pribadi;
+    const qT = $('qbTaxi');    if (qT) qT.textContent = s.taxi;
+    const qL = $('qbListrik'); if (qL) qL.textContent = s.listrik;
+  } catch {}
+}
+
+// ─── TABS ─────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('#userPage .tbb').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#userPage .tbc').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active'); $('t' + id).classList.add('active');
+}
+function swAdm(id, btn) {
+  document.querySelectorAll('.anb').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.apanel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active'); $('p' + id).classList.add('active');
+  if (id === 'Onl') refreshOnline();
+  if (id === 'Usr') renderUTable();
+}
+
+// ─── PHOTO CAPTURE ────────────────────────────
+async function onPhoto(input, imgId, phId, wrapId) {
+  const file = input.files[0]; if (!file) return;
+  pg(1);
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const comp = await compress(e.target.result);
+    _ph[imgId] = comp;
+    const img = $(imgId); img.src = comp; img.style.display = 'block';
+    $(phId).style.display = 'none';
+    const wrap = $(wrapId); wrap.classList.add('has-img'); wrap.classList.remove('err');
+    $(wrapId.replace('W', 'Err')).classList.remove('show');
+    pg(0);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── RADIO BUTTONS ────────────────────────────
+function selRad(el, gid) {
+  document.querySelectorAll('#' + gid + ' .ro').forEach(r => r.classList.remove('active', 'err'));
+  el.classList.add('active'); el.querySelector('input').checked = true;
+  $(gid + 'Err').classList.remove('show');
+}
+const getRadVal = gid => { const c = document.querySelector('#' + gid + ' input:checked'); return c ? c.value : null; };
+
+// ─── VALIDATION ───────────────────────────────
+function vReq(id, eid) {
+  const v = $(id).value.trim();
+  if (!v) { $(id).classList.add('err'); $(eid).classList.add('show'); return false; }
+  $(id).classList.remove('err'); $(eid).classList.remove('show'); return true;
+}
+function vPhoto(imgKey, wid, eid) {
+  if (!_ph[imgKey]) { $(wid).classList.add('err'); $(eid).classList.add('show'); return false; }
+  return true;
+}
+function vRad(gid, eid) {
+  if (!getRadVal(gid)) { document.querySelectorAll('#' + gid + ' .ro').forEach(r => r.classList.add('err')); $(eid).classList.add('show'); return false; }
+  return true;
+}
+
+// ─── SAVE KENDARAAN PRIBADI ───────────────────
+async function savePri() {
+  let ok = true;
+  ok = vPhoto('ppImg', 'ppW', 'ppErr') && ok;
+  ok = vRad('priJenis', 'priJenisErr') && ok;
+  ok = vReq('priPlat', 'priPlatErr') && ok;
+  ok = vReq('priMerk', 'priMerkErr') && ok;
+  ok = vReq('priWarna', 'priWarnaErr') && ok;
+  ok = vReq('priTujuan', 'priTujuanErr') && ok;
+  if (!ok) { toast('Lengkapi semua kolom yang wajib diisi!', 'error'); scrollErr(); return; }
+  pg(1);
+  try {
+    // Generate a smaller thumbnail for the table display
+    const thumb = await compress(_ph['ppImg'], 100, 0.6);
+    await api('POST', '/vehicles', {
+      tipe:       'pribadi',
+      jenis:      getRadVal('priJenis'),
+      plat:       $('priPlat').value.trim().toUpperCase(),
+      merk:       $('priMerk').value.trim(),
+      warna:      $('priWarna').value.trim(),
+      tujuan:     $('priTujuan').value.trim(),
+      foto_data:  _ph['ppImg'],
+      thumb_data: thumb,
+    });
+    toast('Data kendaraan pribadi berhasil disimpan!', 'success');
+    resetF('pri');
+  } catch (e) { toast('Gagal menyimpan: ' + e.message, 'error'); }
+  pg(0);
+}
+
+// ─── SAVE KENDARAAN TAXI ──────────────────────
+async function saveTax() {
+  let ok = true;
+  ok = vPhoto('txImg', 'txW', 'txErr') && ok;
+  ok = vReq('txLambung', 'txLambungErr') && ok;
+  ok = vReq('txPerus', 'txPerusErr') && ok;
+  ok = vRad('taxJenis', 'taxJenisErr') && ok;
+  ok = vReq('txTujuan', 'txTujuanErr') && ok;
+  if (!ok) { toast('Lengkapi semua kolom yang wajib diisi!', 'error'); scrollErr(); return; }
+  pg(1);
+  try {
+    const thumb = await compress(_ph['txImg'], 100, 0.6);
+    await api('POST', '/vehicles', {
+      tipe:       'taxi',
+      jenis:      getRadVal('taxJenis'),
+      lambung:    $('txLambung').value.trim().toUpperCase(),
+      perusahaan: $('txPerus').value.trim(),
+      tujuan:     $('txTujuan').value.trim(),
+      foto_data:  _ph['txImg'],
+      thumb_data: thumb,
+    });
+    toast('Data taxi berhasil disimpan!', 'success');
+    resetF('tax');
+  } catch (e) { toast('Gagal menyimpan: ' + e.message, 'error'); }
+  pg(0);
+}
+
+// ─── RESET FORM ───────────────────────────────
+function resetF(t) {
+  if (t === 'pri') {
+    ['priPlat','priMerk','priWarna','priTujuan'].forEach(id => { $(id).value = ''; $(id).classList.remove('err'); });
+    ['priPlatErr','priMerkErr','priWarnaErr','priTujuanErr','priJenisErr','ppErr'].forEach(id => $(id).classList.remove('show'));
+    $('ppImg').style.display = 'none'; $('ppImg').src = ''; $('ppPh').style.display = 'flex';
+    $('ppW').classList.remove('err','has-img'); $('ppFile').value = ''; delete _ph['ppImg'];
+    document.querySelectorAll('#priJenis .ro').forEach(r => r.classList.remove('active','err'));
+    document.querySelectorAll('#priJenis input').forEach(i => i.checked = false);
+  } else {
+    ['txLambung','txPerus','txTujuan'].forEach(id => { $(id).value = ''; $(id).classList.remove('err'); });
+    ['txLambungErr','txPerusErr','txTujuanErr','taxJenisErr','txErr'].forEach(id => $(id).classList.remove('show'));
+    $('txImg').style.display = 'none'; $('txImg').src = ''; $('txPh').style.display = 'flex';
+    $('txW').classList.remove('err','has-img'); $('txFile').value = ''; delete _ph['txImg'];
+    document.querySelectorAll('#taxJenis .ro').forEach(r => r.classList.remove('active','err'));
+    document.querySelectorAll('#taxJenis input').forEach(i => i.checked = false);
+  }
+}
+
+// ─── DATE FILTER ──────────────────────────────
+function openDatePicker() {
+  const inp = $('srchDate');
+  try { if (inp.showPicker) inp.showPicker(); } catch { inp.click(); }
+}
+function onDateChange() {
+  const dt  = $('srchDate').value;
+  const btn = $('dateBtnToggle'), clr = $('dateClearBtn');
+  if (dt) {
+    const d = new Date(dt + 'T00:00:00');
+    const label = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    $('dateBtnLabel').innerHTML = `<span class="date-btn-badge">${label}</span>`;
+    btn.classList.add('active'); clr.style.display = 'flex';
+  } else {
+    $('dateBtnLabel').textContent = 'Filter Tanggal';
+    btn.classList.remove('active'); clr.style.display = 'none';
+  }
+  filterDB();
+}
+function clearDateFilter() { $('srchDate').value = ''; onDateChange(); }
+
+// ─── VEHICLE TABLE ────────────────────────────
+function applyFil(data, q, dt) {
+  let d = data;
+  if (q) {
+    const ql = q.toLowerCase();
+    d = d.filter(v =>
+      (v.plat     && v.plat.toLowerCase().includes(ql)) ||
+      (v.lambung  && v.lambung.toLowerCase().includes(ql)) ||
+      (v.petugas  && v.petugas.toLowerCase().includes(ql)) ||
+      (v.tujuan   && v.tujuan.toLowerCase().includes(ql)) ||
+      (v.merk     && v.merk.toLowerCase().includes(ql)) ||
+      (v.perusahaan && v.perusahaan.toLowerCase().includes(ql))
+    );
+  }
+  if (dt) d = d.filter(v => v.timestamp.startsWith(dt));
+  return d;
+}
+
+function updateDBTotal(data) { const el = $('dbTotalCount'); if (el) el.textContent = data.length; }
+
+function renderVTable(data) {
+  const tbody = $('vTbody'), empty = $('vEmpty');
+  updateDBTotal(data);
+  if (!data.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = data.map((v, i) => {
+    const dt = new Date(v.timestamp);
+    const ds = dt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    const ts = dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const pl = v.tipe === 'taxi' ? (v.lambung || '-') : (v.plat || '-');
+    // Thumbnail: use thumb_data if available, else show icon
+    const fotoCell = v.thumb_data
+      ? `<img src="${v.thumb_data}" class="ti" onclick="showLB('${v.id}')" title="Perbesar foto">`
+      : (v.has_foto ? '<span style="font-size:.68rem;color:var(--ts)">📷</span>' : '<span style="color:var(--ts)">—</span>');
+    return `<tr id="row_${v.id}">
+      <td style="color:var(--ts);font-size:.75rem">${i + 1}</td>
+      <td>${fotoCell}</td>
+      <td>${v.tipe === 'taxi' ? '<span class="bg bg-blu">🚕 Taxi</span>' : '<span class="bg bg-g">🚗 Pribadi</span>'}</td>
+      <td><strong>${pl}</strong></td>
+      <td>${v.jenis === 'listrik' ? '<span class="bg bg-grn">⚡ Listrik</span>' : '<span class="bg bg-ylw">⛽ Konvensional</span>'}</td>
+      <td>${v.tipe === 'taxi' ? (v.perusahaan || '-') : (v.merk || '-')}</td>
+      <td>${v.warna || '-'}</td>
+      <td>${v.tujuan || '-'}</td>
+      <td><span class="bg bg-g">${v.petugas}</span></td>
+      <td><strong>${ds}</strong><span class="dm">${ts}</span></td>
+      <td><div class="ab">
+        <button class="btn btn-ghost btn-xs" onclick="openEV('${v.id}')">Edit</button>
+        <button class="btn btn-red btn-xs" onclick="confirmDel('v','${v.id}')">Hapus</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterDB() {
+  renderVTable(applyFil(_vehCache, $('srchQ').value, $('srchDate').value));
+}
+function filterType(type) { $('srchQ').value = ''; clearDateFilter(); renderVTable(_vehCache.filter(v => v.jenis === type)); }
+function showAll()        { $('srchQ').value = ''; clearDateFilter(); renderVTable(_vehCache); }
+function clearSearch()    { showAll(); }
+
+// ─── EDIT VEHICLE ─────────────────────────────
+function openEV(id) {
+  const v = _vehCache.find(x => x.id === id); if (!v) return;
+  $('eVid').value    = id;
+  $('eVplat').value  = v.tipe === 'taxi' ? (v.lambung || '') : (v.plat || '');
+  $('eVjenis').value = v.jenis || 'konvensional';
+  $('eVmerk').value  = v.tipe === 'taxi' ? (v.perusahaan || '') : (v.merk || '');
+  $('eVwarna').value = v.warna || '';
+  $('eVtujuan').value = v.tujuan || '';
+  openM('mEV');
+}
+
+async function saveEV() {
+  const id = $('eVid').value;
+  const v  = _vehCache.find(x => x.id === id); if (!v) return;
+  const pv = $('eVplat').value.trim().toUpperCase();
+  const body = {
+    jenis:      $('eVjenis').value,
+    warna:      $('eVwarna').value.trim(),
+    tujuan:     $('eVtujuan').value.trim(),
+    plat:       v.tipe === 'taxi' ? (v.plat || null)       : pv,
+    merk:       v.tipe === 'taxi' ? (v.merk || null)       : $('eVmerk').value.trim(),
+    lambung:    v.tipe === 'taxi' ? pv                     : (v.lambung || null),
+    perusahaan: v.tipe === 'taxi' ? $('eVmerk').value.trim() : (v.perusahaan || null),
+  };
+  pg(1);
+  try {
+    await api('PUT', `/vehicles/${id}`, body);
+    await loadVehicles();
+    closeM('mEV');
+    toast('Data berhasil diperbarui!', 'success');
+  } catch (e) { toast('Gagal memperbarui: ' + e.message, 'error'); }
+  pg(0);
+}
+
+// ─── DELETE CONFIRM ───────────────────────────
+function confirmDel(type, id) {
+  if (type === 'v') {
+    const v = _vehCache.find(x => x.id === id); if (!v) return;
+    const lbl = v.tipe === 'taxi'
+      ? `taxi lambung <strong>${v.lambung || '-'}</strong>`
+      : `kendaraan plat <strong>${v.plat || '-'}</strong>`;
+    $('delTxt').innerHTML = `Yakin hapus data ${lbl}? Tindakan ini tidak dapat dibatalkan.`;
+    $('delBtn').onclick = async () => {
+      pg(1);
+      try {
+        await api('DELETE', `/vehicles/${id}`);
+        await Promise.all([ loadVehicles(), loadStats() ]);
+        closeM('mDel');
+        toast('Data berhasil dihapus.', 'success');
+      } catch (e) { toast('Gagal hapus: ' + e.message, 'error'); }
+      pg(0);
+    };
+  } else {
+    const u = _usrCache.find(x => x.id === id); if (!u) return;
+    $('delTxt').innerHTML = `Yakin hapus user <strong>${u.username}</strong>? Tindakan ini tidak dapat dibatalkan.`;
+    $('delBtn').onclick = async () => {
+      pg(1);
+      try {
+        await api('DELETE', `/users/${id}`);
+        await renderUTable();
+        closeM('mDel');
+        toast(`User "${u.username}" berhasil dihapus.`, 'success');
+      } catch (e) { toast('Gagal hapus: ' + e.message, 'error'); }
+      pg(0);
+    };
+  }
+  openM('mDel');
+}
+
+// ─── STATS MODAL ──────────────────────────────
+function showStat(period) {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const week  = new Date(today); week.setDate(week.getDate() - 6);
+  const month = new Date(now.getFullYear(), now.getMonth(), 1);
+  let data, title;
+  if      (period === 'harian')   { data = _vehCache.filter(v => new Date(v.timestamp) >= today); title = 'Kendaraan Hari Ini'; }
+  else if (period === 'mingguan') { data = _vehCache.filter(v => new Date(v.timestamp) >= week);  title = 'Kendaraan 7 Hari Terakhir'; }
+  else                            { data = _vehCache.filter(v => new Date(v.timestamp) >= month); title = 'Kendaraan Bulan Ini'; }
+  $('mStatTt').textContent = title;
+  const tbody = $('stTbody'), empty = $('stEmpty');
+  if (!data.length) { tbody.innerHTML = ''; empty.style.display = 'block'; }
+  else {
+    empty.style.display = 'none';
+    tbody.innerHTML = data.map((v, i) => {
+      const dt = new Date(v.timestamp);
+      const ts = dt.toLocaleDateString('id-ID') + ' ' + dt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      const pl = v.tipe === 'taxi' ? (v.lambung || '-') : (v.plat || '-');
+      const fotoCell = v.thumb_data
+        ? `<img src="${v.thumb_data}" class="ti" onclick="showLB('${v.id}')" title="Perbesar">`
+        : (v.has_foto ? '📷' : '—');
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${fotoCell}</td>
+        <td>${v.tipe === 'taxi' ? '🚕 Taxi' : '🚗 Pribadi'}</td>
+        <td>${pl}</td>
+        <td>${v.jenis === 'listrik' ? '⚡ Listrik' : '⛽ Konvensional'}</td>
+        <td>${v.tipe === 'taxi' ? (v.perusahaan || '-') : (v.merk || '-')}</td>
+        <td>${v.tujuan || '-'}</td>
+        <td>${v.petugas}</td>
+        <td>${ts}</td>
+      </tr>`;
+    }).join('');
+  }
+  openM('mStat');
+}
+
+// ─── DOWNLOAD / RESTORE ───────────────────────
+async function downloadDB() {
+  pg(1);
+  try {
+    const data = await api('GET', '/export');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `MERUSAKA_DB_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+    toast(`Download berhasil! ${data.vehicles.length} data kendaraan.`, 'success');
+  } catch (e) { toast('Gagal download: ' + e.message, 'error'); }
+  pg(0);
+}
+
+async function restoreDB(input) {
+  const file = input.files[0]; if (!file) return; input.value = '';
+  if (!confirm('Restore akan menimpa SEMUA data kendaraan yang ada. Lanjutkan?')) return;
+  pg(1);
+  try {
+    const text    = await file.text();
+    const bundle  = JSON.parse(text);
+    const vehicles = bundle.vehicles || bundle.veh;
+    if (!vehicles || !Array.isArray(vehicles)) throw new Error('Format file tidak valid. Pastikan file JSON benar.');
+    const result = await api('POST', '/import', { vehicles });
+    await Promise.all([ loadVehicles(), loadStats() ]);
+    showAll();
+    toast(`Restore berhasil! ${result.count} data kendaraan dimuat.`, 'success');
+  } catch (e) { toast('Gagal restore: ' + e.message, 'error'); }
+  pg(0);
+}
+
+// ─── USER MANAGEMENT ──────────────────────────
+async function renderUTable() {
+  try {
+    _usrCache = await api('GET', '/users');
+    $('uTbody').innerHTML = _usrCache.map((u, i) => `<tr>
+      <td style="color:var(--ts)">${i + 1}</td>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.protected ? '<span class="bg bg-g">Admin</span>' : '<span class="bg bg-blu">User</span>'}</td>
+      <td>${new Date(u.created_at).toLocaleDateString('id-ID')}</td>
+      <td><div class="ab">
+        <button class="btn btn-ghost btn-xs" onclick="openEditUser('${u.id}')">Edit PW</button>
+        ${!u.protected
+          ? `<button class="btn btn-red btn-xs" onclick="confirmDel('u','${u.id}')">Hapus</button>`
+          : '<span style="font-size:.67rem;color:var(--ts);padding:4px 8px">Terlindungi</span>'}
+      </div></td>
+    </tr>`).join('');
+  } catch (e) { toast('Gagal memuat daftar user: ' + e.message, 'error'); }
+}
+
+function openAddUser() {
+  $('eUid').value = ''; $('eUnm').value = ''; $('eUnm').disabled = false;
+  $('ePw').value = ''; $('mUserTt').textContent = 'Tambah User Baru'; openM('mUser');
+}
+function openEditUser(id) {
+  const u = _usrCache.find(x => x.id === id); if (!u) return;
+  $('eUid').value = id; $('eUnm').value = u.username; $('eUnm').disabled = true;
+  $('ePw').value = ''; $('mUserTt').textContent = `Edit Password — ${u.username}`; openM('mUser');
+}
+
+async function saveUser() {
+  const id = $('eUid').value, un = $('eUnm').value.trim(), pw = $('ePw').value;
+  if (!pw) { toast('Password tidak boleh kosong!', 'error'); return; }
+  pg(1);
+  try {
+    if (!id) {
+      if (!un) { toast('Username tidak boleh kosong!', 'error'); pg(0); return; }
+      await api('POST', '/users', { username: un, password: pw });
+      toast(`User "${un}" berhasil ditambahkan!`, 'success');
+    } else {
+      await api('PUT', `/users/${id}`, { password: pw });
+      toast('Password berhasil diubah!', 'success');
+    }
+    await renderUTable();
+    closeM('mUser');
+  } catch (e) { toast(e.message, 'error'); }
+  pg(0);
+}
+
+// ─── ONLINE USERS ─────────────────────────────
+async function refreshOnline() {
+  try {
+    const sessions = await api('GET', '/sessions');
+    const c = $('onlineList');
+    if (!sessions.length) {
+      c.innerHTML = `<div class="es"><div class="es-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><h3>Tidak Ada User Online</h3><p>Semua petugas sedang offline</p></div>`;
+      return;
+    }
+    c.innerHTML = sessions.map(s => {
+      const lt = new Date(s.login_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="oui">
+        <div class="od"></div>
+        <div style="flex:1">
+          <strong style="font-size:.88rem">${s.username}</strong>
+          <span class="dm">Login sejak ${lt} · ${s.role === 'admin' ? 'Administrator' : 'Petugas'}</span>
+        </div>
+        <span class="bg bg-grn">● Online</span>
+      </div>`;
+    }).join('');
+  } catch (e) { toast('Gagal memuat data online: ' + e.message, 'error'); }
+}
+
+// ─── ADMIN PASSWORD ───────────────────────────
+async function changeAdmPw() {
+  const np = $('newAdmPw').value, cp = $('cfmAdmPw').value;
+  if (!np)        { toast('Password baru tidak boleh kosong!', 'error'); return; }
+  if (np.length < 4) { toast('Password minimal 4 karakter!', 'error'); return; }
+  if (np !== cp)  { toast('Konfirmasi password tidak cocok!', 'error'); return; }
+  pg(1);
+  try {
+    await api('PUT', `/users/${CU.id}`, { password: np });
+    $('newAdmPw').value = ''; $('cfmAdmPw').value = '';
+    toast('Password admin berhasil diubah!', 'success');
+  } catch (e) { toast(e.message, 'error'); }
+  pg(0);
+}
+
+// ─── LIGHTBOX ─────────────────────────────────
+async function showLB(id) {
+  try {
+    const r = await api('GET', `/vehicles/${id}/photo`);
+    if (!r.foto_data) return;
+    $('lbImg').src = r.foto_data;
+    $('lb').classList.add('open');
+  } catch {}
+}
+function closeLB() { $('lb').classList.remove('open'); }
+
+// ─── MODAL ────────────────────────────────────
+const openM = id => $(id).classList.add('open');
+const closeM = id => $(id).classList.remove('open');
+document.querySelectorAll('.mo').forEach(o => o.addEventListener('click', e => {
+  if (e.target === o) o.classList.remove('open');
+}));
+
+// ─── TOAST ────────────────────────────────────
+const T_ICO = { success: '✓', error: '✕', info: 'i', warning: '!' };
+const T_TTL = { success: 'Berhasil', error: 'Gagal', info: 'Info', warning: 'Peringatan' };
+function toast(msg, type = 'info') {
+  const c = $('tc'), t = document.createElement('div');
+  t.className = `tn ${type}`;
+  t.innerHTML = `<div class="tn-ico">${T_ICO[type] || 'i'}</div><div class="tn-b"><div class="tn-tt">${T_TTL[type] || type}</div><div class="tn-mm">${msg}</div></div>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3400);
+}
+
+// ─── PROGRESS BAR ─────────────────────────────
+const pg = on => {
+  const b = $('pgbar');
+  b.classList[on ? 'add' : 'remove']('on');
+  if (!on) setTimeout(() => b.classList.remove('on'), 400);
+};
+
+// ─── UTILS ────────────────────────────────────
+function shakeEl(el)  { el.style.animation = 'shake .4s ease'; setTimeout(() => el.style.animation = '', 500); }
+function scrollErr()  { const f = document.querySelector('.ferr.show,.pc-wrap.err,.ro.err'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+document.addEventListener('input', e => { if (e.target.style && e.target.style.textTransform === 'uppercase') e.target.value = e.target.value.toUpperCase(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLB(); document.querySelectorAll('.mo.open').forEach(m => m.classList.remove('open')); } });
+
+// ─── BOOT ─────────────────────────────────────
+startClock();
+</script>
+</body>
+</html>
